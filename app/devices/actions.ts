@@ -1,86 +1,54 @@
-"use server";
-
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { getOwner } from "@/lib/access";
 import { redirect } from "next/navigation";
-import {
-  DEVICE_COOKIE,
-  getCurrentDevice,
-  requireApprovedDevice,
-} from "@/lib/access";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { loginWithPassword } from "./actions";
 
-function readDeviceId(formData: FormData) {
-  const id = String(formData.get("deviceId") ?? "");
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-    throw new Error("Invalid device identifier.");
-  }
-  return id;
-}
+export default async function LoginPage() {
+  let user = null;
 
-export async function approveDevice(formData: FormData) {
-  const { user } = await requireApprovedDevice();
-  const id = readDeviceId(formData);
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("authorized_devices")
-    .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .eq("status", "pending")
-    .select("id")
-    .maybeSingle();
-
-  if (error) throw new Error(`Could not approve device: ${error.message}`);
-  if (!data) throw new Error("That pending device could not be found.");
-
-  revalidatePath("/devices");
-}
-
-export async function revokeDevice(formData: FormData) {
-  const { user, device: currentDevice } = await requireApprovedDevice();
-  const id = readDeviceId(formData);
-  if (id === currentDevice.id) {
-    redirect("/devices?error=current");
+  try {
+    user = await getOwner();
+  } catch (error) {
+    user = null;
   }
 
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("revoke_device", {
-    p_user_id: user.id,
-    p_device_id: id,
-  });
+  if (user) {
+    redirect("/private");
+  }
 
-  if (error) throw new Error(`Could not revoke device: ${error.message}`);
-  if (!data) throw new Error("That device could not be revoked.");
+  return (
+    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "400px", margin: "0 auto" }}>
+      <h2>Private Portal</h2>
+      <p>Sign in with your owner account.</p>
+      
+      <form action={loginWithPassword} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div>
+          <label htmlFor="email" style={{ display: "block", marginBottom: "0.25rem" }}>Email</label>
+          <input 
+            id="email" 
+            name="email" 
+            type="email" 
+            required 
+            placeholder="briankosgei260@gmail.com"
+            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
+          />
+        </div>
 
-  revalidatePath("/devices");
-}
+        <div>
+          <label htmlFor="password" style={{ display: "block", marginBottom: "0.25rem" }}>Password</label>
+          <input 
+            id="password" 
+            name="password" 
+            type="password" 
+            required 
+            placeholder="••••••••"
+            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
+          />
+        </div>
 
-export async function revokeCurrentDevice() {
-  const { user } = await requireApprovedDevice();
-  const device = await getCurrentDevice(user.id);
-  if (!device) redirect("/login");
-
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("revoke_device", {
-    p_user_id: user.id,
-    p_device_id: device.id,
-  });
-
-  if (error) throw new Error(`Could not revoke this device: ${error.message}`);
-  if (!data) redirect("/devices?error=last");
-
-  const cookieStore = await cookies();
-  cookieStore.delete(DEVICE_COOKIE);
-  redirect("/device-request");
-}
-
-export async function signOut() {
-  await requireApprovedDevice();
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(`Could not sign out: ${error.message}`);
-
-  redirect("/login");
+        <button type="submit" style={{ padding: "0.6rem", fontSize: "1rem", cursor: "pointer", marginTop: "0.5rem" }}>
+          Sign In
+        </button>
+      </form>
+    </div>
+  );
 }
