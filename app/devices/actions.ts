@@ -1,54 +1,20 @@
-import { getOwner } from "@/lib/access";
-import { redirect } from "next/navigation";
-import { loginWithPassword } from "./actions";
+'use server'
 
-export default async function LoginPage() {
-  let user = null;
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-  try {
-    user = await getOwner();
-  } catch (error) {
-    user = null;
-  }
+export async function requestDeviceApproval(formData: FormData) {
+  const deviceName = formData.get('deviceName') as string
+  const supabase = await createClient()
 
-  if (user) {
-    redirect("/private");
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "400px", margin: "0 auto" }}>
-      <h2>Private Portal</h2>
-      <p>Sign in with your owner account.</p>
-      
-      <form action={loginWithPassword} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label htmlFor="email" style={{ display: "block", marginBottom: "0.25rem" }}>Email</label>
-          <input 
-            id="email" 
-            name="email" 
-            type="email" 
-            required 
-            placeholder="briankosgei260@gmail.com"
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
-          />
-        </div>
+  await supabase.from('devices').insert({
+    user_id: user.id,
+    device_name: deviceName || 'Unknown Device',
+    status: 'pending',
+  })
 
-        <div>
-          <label htmlFor="password" style={{ display: "block", marginBottom: "0.25rem" }}>Password</label>
-          <input 
-            id="password" 
-            name="password" 
-            type="password" 
-            required 
-            placeholder="••••••••"
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
-          />
-        </div>
-
-        <button type="submit" style={{ padding: "0.6rem", fontSize: "1rem", cursor: "pointer", marginTop: "0.5rem" }}>
-          Sign In
-        </button>
-      </form>
-    </div>
-  );
+  redirect('/device-request?status=submitted')
 }
