@@ -1,36 +1,33 @@
-"use server";
+'use server'
 
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-export async function sendSignInLink(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+export async function login(formData: FormData) {
+  const email = formData.get('email') as string
 
-  if (!ownerEmail) {
-    throw new Error("OWNER_EMAIL is not configured.");
+  if (!email) {
+    return { error: 'Email is required' }
   }
 
-  if (!email || email !== ownerEmail) {
-    redirect("/login?error=owner");
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://kosgei-project-a1-f166-ooxcwbvkn-project-brian.vercel.app'}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      console.error('Supabase auth error:', error.message)
+      return { error: error.message }
+    }
+  } catch (err: any) {
+    console.error('Server action exception:', err)
+    return { error: err.message || 'Failed to send sign-in link' }
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) {
-    throw new Error("NEXT_PUBLIC_APP_URL is not configured.");
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${appUrl.replace(/\/$/, "")}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    throw new Error(`Could not send sign-in link: ${error.message}`);
-  }
-
-  redirect("/login?sent=1");
+  redirect('/login?message=Check your email for the sign-in link')
 }
