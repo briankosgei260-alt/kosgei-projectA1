@@ -1,3 +1,4 @@
+'server-only'
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -7,25 +8,28 @@ export async function loginWithPassword(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  if (!email || !password) {
-    return { error: 'Email and password are required' }
+  // Diagnostic check to see what Vercel has loaded
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    return { error: `ENV ERROR: URL is ${url ? 'Loaded' : 'MISSING'}, Key is ${key ? 'Loaded' : 'MISSING'}` }
   }
 
   try {
     const supabase = await createClient()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
-      console.error('Supabase Auth Error:', error.message)
       return { error: error.message }
     }
   } catch (err: any) {
-    console.error('Server Action Catch:', err)
-    return { error: err.message || 'Connection failed' }
+    // This will show us the exact reason fetch failed (e.g., bad URL or network block)
+    return { error: `Connection failed: ${err.message} [URL: ${url}]` }
   }
 
   redirect('/private')
