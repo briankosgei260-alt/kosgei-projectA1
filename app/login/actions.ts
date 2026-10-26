@@ -11,15 +11,21 @@ export async function loginWithPassword(formData: FormData) {
     return { error: 'Email and password are required' }
   }
 
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error) {
-    return { error: error.message }
+    if (error) {
+      console.error('Supabase Auth Error:', error.message)
+      return { error: error.message }
+    }
+  } catch (err: any) {
+    console.error('Server Action Catch:', err)
+    return { error: err.message || 'Connection failed' }
   }
 
   redirect('/private')
