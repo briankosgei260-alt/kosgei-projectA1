@@ -1,39 +1,40 @@
-import { sendSignInLink } from "./actions";
+import { getOwner } from "@/lib/access";
+import { redirect } from "next/navigation";
+import { login } from "./actions";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
-}) {
-  const params = await searchParams;
+export default async function LoginPage() {
+  let user = null;
+
+  try {
+    user = await getOwner();
+  } catch (error) {
+    user = null;
+  }
+
+  // If already logged in, redirect to private route
+  if (user) {
+    redirect("/private");
+  }
 
   return (
-    <section>
-      <h1>Private Portal</h1>
+    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "400px", margin: "0 auto" }}>
+      <h2>Private Portal</h2>
       <p>Sign in with the owner email address to continue.</p>
-      {params.sent && <p role="status">Check your email for the sign-in link.</p>}
-      {params.error === "owner" && (
-        <p role="alert">Only the configured owner account can sign in.</p>
-      )}
-      {params.error === "link" && (
-        <p role="alert">That sign-in link is invalid or expired. Request a new one.</p>
-      )}
-      <form action={sendSignInLink}>
+      
+      <form action={login} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <label htmlFor="email">Owner email</label>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input
-            autoComplete="email"
-            id="email"
-            name="email"
-            required
-            style={{ flex: 1, padding: 10 }}
-            type="email"
-          />
-          <button style={{ padding: "10px 16px" }} type="submit">
-            Send sign-in link
-          </button>
-        </div>
+        <input 
+          id="email" 
+          name="email" 
+          type="email" 
+          required 
+          placeholder="briankosgei260@gmail.com"
+          style={{ padding: "0.5rem", fontSize: "1rem" }}
+        />
+        <button type="submit" style={{ padding: "0.5rem", fontSize: "1rem", cursor: "pointer" }}>
+          Send sign-in link
+        </button>
       </form>
-    </section>
+    </div>
   );
 }
