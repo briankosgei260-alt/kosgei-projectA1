@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
 const supabaseUrl = 'https://sflyeivkpjdqjkmxjqzu.supabase.co'
-const supabaseAnonKey = 'sb_publishable_Vi-3ygvisqcTAJPs0-t-Hg_uSA-YQt4'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmbHllaXZrcGpkcWprbXhqcXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NDg3MTMsImV4cCI6MjEwODMyNDcxM30.OaljzCc4VHiz2xvlZ4Kz2xz4A2vEDpA2WsOuVo7Ovfc'
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
