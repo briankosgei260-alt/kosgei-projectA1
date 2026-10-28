@@ -1,8 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+
+const supabaseUrl = 'https://sflyeivkpjdqjkmxjqzu.supabase.co'
+const supabaseAnonKey = 'sb_publishable_Vi-3ygvisqcTAJPs0-t-Hg_uSA-YQt4'
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export default function LoginPage() {
   const [email, setEmail] = useState('briankosgei260@gmail.com')
@@ -63,7 +68,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            ssrequired
+            required
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
           />
         </div>
