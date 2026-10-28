@@ -1,68 +1,76 @@
 'use client'
 
 import { useState } from 'react'
-import { loginWithPassword } from './actions'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [email, setEmail] = useState('briankosgei260@gmail.com')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setErrorMessage(null)
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
     setLoading(true)
+    setError(null)
 
-    const formData = new FormData(event.currentTarget)
-    const result = await loginWithPassword(formData)
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-    if (result?.error) {
-      setErrorMessage(result.error)
+    if (error) {
+      setError(error.message)
       setLoading(false)
+    } else {
+      router.push('/private')
+      router.refresh()
     }
   }
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "400px", margin: "0 auto" }}>
+    <div style={{ maxWidth: '400px', margin: '80px auto', padding: '20px', fontFamily: 'sans-serif' }}>
       <h2>Private Portal</h2>
-      <p>Sign in with your owner account.</p>
+      <p style={{ color: '#666' }}>Sign in with your owner account.</p>
 
-      {errorMessage && (
-        <div style={{ padding: "0.75rem", backgroundColor: "#ffebee", color: "#c62828", borderRadius: "4px", marginBottom: "1rem" }}>
-          {errorMessage}
+      {error && (
+        <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '10px', marginBottom: '15px', borderRadius: '4px' }}>
+          {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label htmlFor="email" style={{ display: "block", marginBottom: "0.25rem" }}>Email</label>
-          <input 
-            id="email" 
-            name="email" 
-            type="email" 
-            required 
-            placeholder="briankosgei260@gmail.com"
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
+      <form onSubmit={handleLogin}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
           />
         </div>
 
-        <div>
-          <label htmlFor="password" style={{ display: "block", marginBottom: "0.25rem" }}>Password</label>
-          <input 
-            id="password" 
-            name="password" 
-            type="password" 
-            required 
-            placeholder="••••••••"
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", boxSizing: "border-box" }}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
           />
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading}
-          style={{ padding: "0.6rem", fontSize: "1rem", cursor: "pointer", marginTop: "0.5rem" }}
+          style={{ width: '100%', padding: '12px', backgroundColor: '#000', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
     </div>
